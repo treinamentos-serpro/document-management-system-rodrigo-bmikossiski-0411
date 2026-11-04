@@ -1,39 +1,49 @@
-const { randomUUID } = require('node:crypto');
+const { createDocumentRecord, toPublicDocument } = require('./documentMapper');
+const { createDocumentQuotaService } = require('./documentQuotaService');
 
-function toPublicDocument(document) {
-  const { storageName, ...publicDocument } = document;
-  return publicDocument;
-}
+function createDocumentService({
+  documentRepository,
+  fileStorageRepository,
+  maxUserStorageBytes,
+  maxStorageBytes,
+  maxUserDocuments,
+}) {
+  const documentQuotaService = createDocumentQuotaService({
+    documentRepository,
+    fileStorageRepository,
+    maxUserStorageBytes,
+    maxStorageBytes,
+    maxUserDocuments,
+  });
 
-function createDocumentService({ documentRepository, fileStorageRepository }) {
   return {
     async saveUploadedDocument(file, owner) {
-      const document = {
-        id: randomUUID(),
-        originalName: file.originalname,
-        storageName: file.filename,
-        size: file.size,
-        uploadedAt: new Date().toISOString(),
-        owner,
-        mimeType: file.mimetype || 'application/octet-stream',
-      };
-
+      let releaseQuota;
       try {
+        releaseQuota = await documentQuotaService.reserveUpload(file, owner);
+        const document = createDocumentRecord(file, owner);
         documentRepository.save(document);
+        return toPublicDocument(document);
       } catch (error) {
-        await fileStorageRepository.remove(document.storageName);
+        await fileStorageRepository.remove(file.filename);
         throw error;
+      } finally {
+        releaseQuota?.();
       }
-
-      return toPublicDocument(document);
     },
 
     listDocuments(owner) {
       return documentRepository.findByOwner(owner).map(toPublicDocument);
     },
 
-    findDocumentForUser(id, owner) {
-      return documentRepository.findByIdAndOwner(id, owner);
+    createDownload(id, owner) {
+      const document = documentRepository.findByIdAndOwner(id, owner);
+      if (!document) return null;
+
+      return {
+        document: toPublicDocument(document),
+        stream: fileStorageRepository.createReadStream(document.storageName),
+      };
     },
   };
 }

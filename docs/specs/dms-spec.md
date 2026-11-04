@@ -40,10 +40,11 @@ Permitir que usuários enviem, listem e baixem seus documentos, mantendo os arqu
 | RNF-01 | Arquivos são gravados em `backend/storage` via `multer` com `diskStorage`. |
 | RNF-02 | Metadados são mantidos em memória; reiniciar o processo perde os registros. |
 | RNF-03 | `PORT` configura a porta HTTP; o padrão é `3000`. |
-| RNF-04 | `MAX_FILE_SIZE_BYTES` configura o tamanho máximo; o padrão é 10 MiB. |
+| RNF-04 | `MAX_FILE_SIZE_BYTES` configura o tamanho máximo por arquivo; o padrão é 10 MiB. |
 | RNF-05 | A API não expõe o nome interno nem o caminho físico do arquivo. |
-| RNF-06 | `X-User-Id` oferece isolamento funcional, não autenticação segura para produção. |
+| RNF-06 | `X-User-Id` é aceito apenas em desenvolvimento; em produção o owner deve vir de identidade autenticada. |
 | RNF-07 | Erros internos não devem expor stack traces nem caminhos locais ao cliente. |
+| RNF-08 | Uploads são limitados por usuário, capacidade local e frequência de requisições. |
 
 ## 5. Modelo de dados
 
@@ -55,29 +56,29 @@ Permitir que usuários enviem, listem e baixem seus documentos, mantendo os arqu
 | `size` | number | Tamanho em bytes. |
 | `uploadedAt` | string | Data/hora UTC em ISO 8601. |
 | `owner` | string | Identificador recebido em `X-User-Id`. |
-| `mimeType` | string | Tipo de mídia informado no upload, com fallback para `application/octet-stream`. |
+| `mimeType` | string | Tipo de entrega seguro, atualmente `application/octet-stream`. |
 
 Respostas públicas incluem todos os campos, exceto `storageName`.
 
 ## 6. Contratos de API
 
-As rotas são expostas pelo backend sem prefixo. No desenvolvimento, o frontend usa `/api` e o proxy do Vite remove esse prefixo. Todas as rotas de documentos exigem `X-User-Id` não vazio.
+As rotas são expostas pelo backend sem prefixo. No desenvolvimento, o frontend usa `/api` e o proxy do Vite remove esse prefixo. Em desenvolvimento, as rotas aceitam `X-User-Id`; em produção exigem que um middleware de autenticação anterior defina `req.auth.userId`.
 
 ### `POST /upload`
 
 - Entrada: `multipart/form-data`, campo `file`, um arquivo por requisição.
 - Sucesso: `201 Created`, corpo JSON com os metadados públicos do documento.
-- Erros: `400` para usuário ou arquivo ausente/entrada inválida; `413` para arquivo acima do limite; `500` para falha inesperada.
+- Erros: `400` para usuário ou arquivo ausente/entrada inválida; `413` para arquivo acima de limite/cota; `429` para excesso de frequência; `500` para falha inesperada.
 
 ### `GET /documents`
 
 - Sucesso: `200 OK`, corpo `{ "documents": [...] }` com documentos do usuário ordenados de forma decrescente por `uploadedAt`.
 - Lista vazia: `200 OK` com array vazio.
-- Erro: `400` se `X-User-Id` estiver ausente ou vazio.
+- Erro: `400` se a identidade estiver ausente em desenvolvimento; `401` se não houver identidade autenticada em produção.
 
 ### `GET /documents/:id/download`
 
-- Sucesso: `200 OK`, bytes do arquivo, `Content-Type` do documento e `Content-Disposition: attachment` com o nome original tratado com segurança.
+- Sucesso: `200 OK`, bytes do arquivo, `Content-Type: application/octet-stream`, `X-Content-Type-Options: nosniff` e `Content-Disposition: attachment` com o nome original tratado com segurança.
 - Erro: `404 Not Found` se o documento não existir ou pertencer a outro usuário.
 
 Formato dos erros JSON: `{ "error": { "code": "CODIGO_ESTAVEL", "message": "Descrição em português" } }`.
@@ -90,6 +91,17 @@ Formato dos erros JSON: `{ "error": { "code": "CODIGO_ESTAVEL", "message": "Desc
 - Metadados vivem em memória. Arquivos podem permanecer no disco sem registro após reinício.
 - Frontend React é organizado em `pages/`, `components/` e `services/`, e chama o backend por `fetch` no prefixo `/api`.
 - A identificação por cabeçalho não substitui autenticação real.
+
+## 9. Configuração
+
+| Variável | Padrão | Uso |
+|---|---:|---|
+| `PORT` | `3000` | Porta HTTP do backend. |
+| `MAX_FILE_SIZE_BYTES` | `10485760` | Tamanho máximo por arquivo. |
+| `MAX_USER_STORAGE_BYTES` | `104857600` | Cota de bytes por usuário conforme metadados em memória. |
+| `MAX_STORAGE_BYTES` | `1073741824` | Cota global do diretório local. |
+| `MAX_USER_DOCUMENTS` | `100` | Quantidade máxima de documentos por usuário. |
+| `UPLOADS_PER_MINUTE` | `30` | Frequência máxima por IP em janela fixa de um minuto. |
 
 ## 8. Plano de execução
 

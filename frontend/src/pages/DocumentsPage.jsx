@@ -18,6 +18,7 @@ export default function DocumentsPage() {
   const [activeUser, setActiveUser] = useState(getStoredUser);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -44,6 +45,7 @@ export default function DocumentsPage() {
 
   function handleUserSubmit(event) {
     event.preventDefault();
+    if (isUploading) return;
     const userId = userInput.trim();
     if (!userId) {
       setError('Informe um identificador de usuário.');
@@ -56,16 +58,22 @@ export default function DocumentsPage() {
   }
 
   async function handleUpload(file) {
+    const uploadOwner = activeUser;
     setError('');
     setNotice('');
+    setIsUploading(true);
     try {
-      await uploadDocument(activeUser, file);
-      setNotice('Documento enviado.');
-      setRefreshKey((value) => value + 1);
+      await uploadDocument(uploadOwner, file);
+      if (uploadOwner === activeUser) {
+        setNotice('Documento enviado.');
+        setRefreshKey((value) => value + 1);
+      }
       return true;
     } catch (requestError) {
       setError(requestError.message);
       return false;
+    } finally {
+      setIsUploading(false);
     }
   }
 
@@ -93,8 +101,11 @@ export default function DocumentsPage() {
               value={userInput}
               onChange={(event) => setUserInput(event.target.value)}
               autoComplete="off"
+              disabled={isUploading}
             />
-            <button type="submit" aria-label="Abrir documentos deste usuário">Abrir</button>
+            <button type="submit" aria-label="Abrir documentos deste usuário" disabled={isUploading}>
+              Abrir
+            </button>
           </div>
         </form>
       </section>
@@ -107,7 +118,7 @@ export default function DocumentsPage() {
           </div>
           <span className="storage-note">Armazenamento local</span>
         </div>
-        <UploadComponent onUpload={handleUpload} disabled={!activeUser} />
+        <UploadComponent onUpload={handleUpload} disabled={!activeUser || isUploading} />
       </section>
 
       <section className="documents-section" aria-labelledby="documents-title">

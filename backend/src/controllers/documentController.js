@@ -1,16 +1,24 @@
-function requireUser(req, res, next) {
-  const userId = req.get('X-User-Id');
-  if (!userId || !userId.trim()) {
-    return res.status(400).json({
-      error: { code: 'USER_ID_REQUIRED', message: 'O cabeçalho X-User-Id é obrigatório.' },
-    });
-  }
+function createRequireUser({ allowHeaderIdentity }) {
+  return function requireUser(req, res, next) {
+    const userId = req.auth?.userId || (allowHeaderIdentity ? req.get('X-User-Id') : null);
+    if (!userId || typeof userId !== 'string' || !userId.trim() || userId.trim().length > 128) {
+      const status = allowHeaderIdentity ? 400 : 401;
+      return res.status(status).json({
+        error: {
+          code: allowHeaderIdentity ? 'USER_ID_REQUIRED' : 'AUTHENTICATION_REQUIRED',
+          message: allowHeaderIdentity
+            ? 'Informe um X-User-Id válido (máximo de 128 caracteres).'
+            : 'É necessário autenticar o usuário.',
+        },
+      });
+    }
 
-  req.userId = userId.trim();
-  return next();
+    req.userId = userId.trim();
+    return next();
+  };
 }
 
-function createDocumentController({ documentService, fileStorageRepository }) {
+function createDocumentController({ documentService }) {
   return {
     async upload(req, res) {
       if (!req.file) {
@@ -28,25 +36,26 @@ function createDocumentController({ documentService, fileStorageRepository }) {
     },
 
     download(req, res, next) {
-      const document = documentService.findDocumentForUser(req.params.id, req.userId);
-      if (!document) {
+      const download = documentService.createDownload(req.params.id, req.userId);
+      if (!download) {
         return res.status(404).json({
           error: { code: 'DOCUMENT_NOT_FOUND', message: 'Documento não encontrado.' },
         });
       }
 
-      res.setHeader('Content-Type', document.mimeType);
-      return res.download(
-        fileStorageRepository.getPath(document.storageName),
-        document.originalName,
-        (error) => {
-          if (error) {
-            next(error);
-          }
-        },
-      );
+      res.attachment(download.document.originalName);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      download.stream.on('error', (error) => {
+        if (res.headersSent) {
+          res.destroy(error);
+          return;
+        }
+        next(error);
+      });
+      return download.stream.pipe(res);
     },
   };
 }
 
-module.exports = { createDocumentController, requireUser };
+module.exports = { createDocumentController, createRequireUser };

@@ -1,11 +1,11 @@
 const express = require('express');
-const { createDocumentController, requireUser } = require('../controllers/documentController');
+const { createDocumentController } = require('../controllers/documentController');
 
-function createDocumentsRoutes({ documentService, fileStorageRepository, upload }) {
+function createDocumentsRoutes({ documentService, upload, requireUser, uploadRateLimiter }) {
   const router = express.Router();
-  const controller = createDocumentController({ documentService, fileStorageRepository });
+  const controller = createDocumentController({ documentService });
 
-  router.post('/upload', requireUser, upload.single('file'), controller.upload);
+  router.post('/upload', requireUser, uploadRateLimiter, upload.single('file'), controller.upload);
   router.get('/documents', requireUser, controller.list);
   router.get('/documents/:id/download', requireUser, controller.download);
 
