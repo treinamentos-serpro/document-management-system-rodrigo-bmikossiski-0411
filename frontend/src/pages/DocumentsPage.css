@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap');
+
+:root {
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  color: #23322c;
+  background: #f5f6f1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #23322c;
+  --muted: #6a7770;
+  --line: #dce2da;
+  --green: #28644d;
+  --green-dark: #1c4938;
+  --white: #fff;
+  --amber: #c58a38;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-image: linear-gradient(110deg, rgba(217, 225, 214, 0.26) 1px, transparent 1px);
+  background-size: 34px 34px;
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.56; }
+.workspace { width: min(100% - 64px, 1120px); min-height: 100vh; margin: 0 auto; padding-bottom: 32px; }
+.topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.brand { display: inline-flex; gap: 11px; align-items: center; color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; }
+.brand-symbol { display: grid; gap: 3px; width: 20px; }
+.brand-symbol i { display: block; height: 3px; background: var(--green); }
+.brand-symbol i:nth-child(2) { width: 14px; }
+.brand-symbol i:nth-child(3) { width: 8px; background: var(--amber); }
+.brand-period { color: var(--amber); }
+.topbar-caption, .eyebrow { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; }
+.page-heading { display: flex; align-items: end; justify-content: space-between; gap: 28px; padding: 48px 0 36px; }
+.eyebrow { margin: 0 0 10px; }
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 9px; color: var(--ink); font-family: 'DM Serif Display', Georgia, serif; font-size: 40px; font-weight: 400; }
+.heading-copy { margin-bottom: 0; color: var(--muted); font-size: 14px; }
+.user-form { width: 230px; flex: 0 0 auto; }
+.user-form label, .file-picker-label { display: block; margin-bottom: 7px; color: var(--muted); font-size: 11px; font-weight: 600; }
+.user-control { display: flex; border: 1px solid #cbd4ca; background: var(--white); }
+.user-control input { width: 100%; min-width: 0; border: 0; padding: 10px 11px; outline-color: var(--green); color: var(--ink); }
+.user-control button { border: 0; padding: 0 13px; background: var(--green); color: white; font-size: 12px; font-weight: 600; }
+.user-control button:hover, .primary-button:hover { background: var(--green-dark); }
+.upload-section { padding: 24px 28px 25px; border-left: 3px solid var(--green); background: #e8eee7; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.section-heading h2 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 600; }
+.section-heading .eyebrow { margin-bottom: 6px; }
+.storage-note { color: var(--green-dark); font-size: 11px; font-weight: 600; }
+.upload-form { display: flex; align-items: end; gap: 14px; margin-top: 20px; }
+.file-picker { min-width: 260px; }
+.file-picker input { display: block; width: 100%; color: var(--muted); font-size: 12px; }
+.file-picker input::file-selector-button { margin-right: 10px; border: 1px solid #b8c5b8; padding: 8px 11px; background: var(--white); color: var(--ink); font: inherit; cursor: pointer; }
+.selected-file { flex: 1; overflow: hidden; padding-bottom: 8px; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.primary-button { min-height: 36px; border: 0; padding: 0 15px; background: var(--green); color: var(--white); font-size: 12px; font-weight: 600; }
+.documents-section { margin-top: 43px; }
+.list-heading { padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.document-count { color: var(--muted); font-size: 12px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th { padding: 12px 10px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+td { padding: 15px 10px; border-top: 1px solid var(--line); color: #58665f; font-size: 12px; white-space: nowrap; }
+th:first-child, td:first-child { padding-left: 0; }
+.document-name { display: flex; align-items: center; gap: 12px; color: var(--ink); font-size: 13px; font-weight: 600; }
+.document-name > span:last-child { overflow: hidden; max-width: 460px; text-overflow: ellipsis; }
+.document-mark { display: inline-grid; width: 32px; height: 36px; place-items: center; border: 1px solid #cbd8cc; background: #edf2eb; color: var(--green); font-size: 8px; letter-spacing: 0.04em; }
+.action-cell { text-align: right; }
+.download-button { border: 1px solid #cbd4ca; padding: 7px 12px; background: transparent; color: var(--green-dark); font-size: 11px; font-weight: 600; }
+.download-button:hover { border-color: var(--green); background: #e8eee7; }
+.list-status { padding: 28px 0; color: var(--muted); font-size: 13px; }
+.empty-state { border-bottom: 1px solid var(--line); }
+.message { margin: 14px 0 0; padding: 10px 12px; font-size: 12px; }
+.error-message { border-left: 3px solid #a7483d; background: #f7e9e6; color: #762f28; }
+.success-message { border-left: 3px solid var(--green); background: #e7efe7; color: var(--green-dark); }
+.page-footer { display: flex; justify-content: space-between; margin-top: 54px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+
+@media (max-width: 680px) {
+  .workspace { width: min(100% - 32px, 1120px); }
+  .topbar { height: 64px; }
+  .topbar-caption { font-size: 8px; }
+  .page-heading { align-items: stretch; flex-direction: column; padding: 34px 0 26px; }
+  h1 { font-size: 34px; }
+  .user-form { width: 100%; }
+  .upload-section { padding: 20px 16px; }
+  .upload-form { align-items: stretch; flex-direction: column; gap: 11px; }
+  .file-picker { min-width: 0; }
+  .selected-file { min-height: 18px; padding: 0; }
+  .primary-button { width: 100%; min-height: 42px; }
+  .documents-section { margin-top: 34px; }
+  table { min-width: 570px; }
+  .section-heading h2 { font-size: 16px; }
+  .storage-note { font-size: 9px; }
+}
