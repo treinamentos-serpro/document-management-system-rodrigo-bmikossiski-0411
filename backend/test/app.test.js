@@ -79,6 +79,62 @@ test('faz upload, lista somente documentos do usuário e baixa o arquivo', async
   assert.equal(forbiddenDownload.status, 404);
 });
 
+test('upload retorna metadados públicos e preserva bytes no download', async (t) => {
+  const baseUrl = await createTestServer(t);
+  const content = Buffer.from([0, 255, 128, 13, 10, 42]);
+  const form = new FormData();
+  form.append('file', new Blob([content]), 'arquivo.bin');
+
+  const uploadResponse = await fetch(`${baseUrl}/upload`, {
+    method: 'POST',
+    headers: { 'X-User-Id': 'ana' },
+    body: form,
+  });
+  assert.equal(uploadResponse.status, 201);
+  assert.match(uploadResponse.headers.get('content-type'), /application\/json/);
+  const document = await uploadResponse.json();
+  assert.equal(typeof document.id, 'string');
+  assert.ok(document.id.length > 0);
+  assert.ok(Number.isFinite(Date.parse(document.uploadedAt)));
+  assert.deepEqual(document, {
+    id: document.id,
+    originalName: 'arquivo.bin',
+    size: content.length,
+    uploadedAt: document.uploadedAt,
+    owner: 'ana',
+    mimeType: 'application/octet-stream',
+  });
+
+  const downloadResponse = await fetch(`${baseUrl}/documents/${document.id}/download`, {
+    headers: { 'X-User-Id': 'ana' },
+  });
+  assert.equal(downloadResponse.status, 200);
+  assert.match(downloadResponse.headers.get('content-disposition'), /^attachment;/);
+  assert.match(downloadResponse.headers.get('content-disposition'), /filename="arquivo\.bin"/);
+  assert.deepEqual(Buffer.from(await downloadResponse.arrayBuffer()), content);
+});
+
+test('listagem retorna uma coleção vazia quando o usuário não tem documentos', async (t) => {
+  const baseUrl = await createTestServer(t);
+  const response = await fetch(`${baseUrl}/documents`, {
+    headers: { 'X-User-Id': 'ana' },
+  });
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /application\/json/);
+  assert.deepEqual(await response.json(), { documents: [] });
+});
+
+test('download de documento inexistente retorna erro 404', async (t) => {
+  const baseUrl = await createTestServer(t);
+  const response = await fetch(`${baseUrl}/documents/inexistente/download`, {
+    headers: { 'X-User-Id': 'ana' },
+  });
+
+  assert.equal(response.status, 404);
+  assert.equal((await response.json()).error.code, 'DOCUMENT_NOT_FOUND');
+});
+
 test('valida usuário, arquivo obrigatório e limite de tamanho', async (t) => {
   const baseUrl = await createTestServer(t, { maxFileSizeBytes: 3 });
 
